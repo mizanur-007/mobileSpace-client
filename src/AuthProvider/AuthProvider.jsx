@@ -10,6 +10,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import auth from "../Firebase/firebase.config";
+import axios from "axios";
+import useAxiosBase from "../Hooks/useAxiosBase";
 
 export const AuthContext = createContext(null);
 const provider = new GoogleAuthProvider();
@@ -20,10 +22,14 @@ const AuthProvider = ({ children }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [brandName, setBrandName] = useState("");
+    const axiosBase = useAxiosBase();
 
     useEffect(()=>{
       setLoading(true)
-      fetch("https://brand-shop-server-fq984txzu-md-mizanur-rahmans-projects.vercel.app/products")
+      fetch("http://localhost:5000/products",{
+        method: "GET",
+        credentials: "include", // include credentials for cross-origin requests
+      })
       .then(res=> res.json())
       .then(data => setProducts(data))
 
@@ -53,9 +59,22 @@ const githubLogin = ()=>{
 
   // observer 
   useEffect(() => {
-    const unSubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unSubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
+      const loggedUser = { email: currentUser?.email};  
+      if(currentUser){
+        axiosBase.post('/jwt',loggedUser)
+        .then(res =>{
+          console.log(res.data)
+        })
+      }else{
+        axiosBase.post('/logout',loggedUser)
+        .then(res =>{
+          console.log(res.data)
+        })
+      }
+      
     });
     return () => {
       unSubscribe();
